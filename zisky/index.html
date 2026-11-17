@@ -2,6 +2,7 @@
 <html lang="cs">
 <head>
 <meta charset="utf-8">
+<script>if(location.protocol==="http:"&&location.hostname==="aplikace.tgaservice.cz")location.replace("https:"+location.href.slice(5));</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#1c1917">
 <meta name="robots" content="noindex, nofollow">
@@ -80,6 +81,7 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
 .hint{font-size:13px;color:var(--muted);margin-top:10px}
 .center{min-height:70vh;display:flex;align-items:center;justify-content:center}
 .login{width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px;margin:0}
+.login-kicker{display:block;font:600 12px var(--display);letter-spacing:.3em;color:var(--muted);margin-bottom:2px}
 .login h2{margin:0;font:700 22px var(--display);letter-spacing:.03em;text-transform:uppercase}
 .login p{margin:0;color:var(--muted)}
 .err{color:var(--neg);font-size:14px;min-height:1em}
@@ -98,7 +100,7 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
 </head>
 <body>
 
-<header class="top">
+<header class="top" id="top" hidden>
   <div class="top-in">
     <nav class="brands" aria-label="Aplikace">
       <a class="brand" id="lnk-stitky" href="../"><small>TGA SERVICE</small><b>Servisní štítek</b></a>
@@ -121,7 +123,7 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
 <!-- Přihlášení -->
 <div id="v-login" class="wrap center" hidden>
   <form id="login-form" class="card login">
-    <h2>Přihlášení</h2>
+    <div><small class="login-kicker">TGA SERVICE</small><h2>Přihlášení</h2></div>
     <label>E-mail<input type="email" id="l-email" required autocomplete="username"></label>
     <label>Heslo<input type="password" id="l-pass" required autocomplete="current-password"></label>
     <div class="err" id="l-err"></div>
@@ -224,7 +226,7 @@ const parse = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m
 const monday = d => { const x=new Date(d); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; };
 const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 
-const show = v => { ['v-config','v-login','v-app'].forEach(id=>$(id).hidden = id!==v); $('user-box').hidden = v!=='v-app'; };
+const show = v => { ['v-config','v-login','v-app'].forEach(id=>$(id).hidden = id!==v); $('user-box').hidden = v!=='v-app'; $('top').hidden = v!=='v-app'; };
 
 // ---------- databáze ----------
 let db = null, rows = [], editId = null, sort = {key:'date', dir:-1}, channel = null;

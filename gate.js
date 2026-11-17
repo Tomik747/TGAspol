@@ -3,6 +3,10 @@
 // at /zisky/ and back here afterwards. The exe build does not include this file.
 // Note: this hides the page from casual visitors; the label app holds no stored data.
 (function () {
+  if (location.protocol === "http:" && location.hostname === "aplikace.tgaservice.cz") {
+    location.replace("https:" + location.href.slice(5));
+    return;
+  }
   var hide = document.createElement("style");
   hide.textContent = "html{visibility:hidden!important}";
   document.head.appendChild(hide);
