@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#1c1917">
+<meta name="robots" content="noindex, nofollow">
 <title>Průběžné zisky – TGA SERVICE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -265,6 +266,9 @@ async function start(){
 }
 let entered = false;
 async function enterApp(session){
+  // Přišel ze štítků přes přihlášení (?dalsi=/…) → po přihlášení zpět tam.
+  const dalsi = new URLSearchParams(location.search).get('dalsi');
+  if(dalsi && dalsi.startsWith('/') && !dalsi.startsWith('//')){ location.replace(dalsi); return; }
   $('u-email').textContent = session.user.email || '';
   show('v-app');
   if(entered) return; entered = true;
