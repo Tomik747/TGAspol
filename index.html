@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c1917">
+<title>Průběžné zisky – TGA SERVICE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Barvy a písmo jako aplikace Servisní štítky (tga-service-care-tag/src/styles.css). */
+:root{
+  --bg:oklch(0.2 0.006 50); --card:oklch(0.245 0.007 50); --text:oklch(0.96 0.006 80);
+  --muted:oklch(0.7 0.01 70); --border:oklch(0.34 0.008 50); --input:oklch(0.38 0.008 50);
+  --secondary:oklch(0.31 0.008 50); --primary:oklch(0.6 0.205 34); --primary-text:oklch(0.99 0 0);
+  --pos:oklch(0.76 0.15 150); --neg:oklch(0.7 0.19 25); --row:oklch(0.225 0.007 50);
+  --font:"Barlow",ui-sans-serif,system-ui,sans-serif;
+  --display:"Barlow Condensed","Barlow",ui-sans-serif,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1152px;margin:0 auto;padding:24px 24px 48px}
+
+/* hlavička s přepínačem */
+.top{border-bottom:1px solid var(--border)}
+.top-in{max-width:1152px;margin:0 auto;padding:16px 24px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px}
+.brands{display:flex;align-items:flex-end;gap:24px;flex:1;min-width:0}
+.brand{display:block;color:var(--muted);text-decoration:none;padding-bottom:12px;border-bottom:2px solid transparent;transition:color .15s}
+a.brand:hover{color:var(--text)}
+.brand.on{color:var(--text);border-bottom-color:var(--primary)}
+.brand small{display:block;font:600 12px var(--display);letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.brand b{display:block;font:700 24px/1.2 var(--display);letter-spacing:.025em;text-transform:uppercase;white-space:nowrap}
+.sep{width:1px;height:36px;background:var(--border);margin-bottom:14px}
+.user{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;padding-bottom:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.on{background:var(--pos)} .dot.off{background:var(--neg)}
+
+/* nadpisy sekcí jako „VÝMĚNA“ na štítcích */
+.sec{display:flex;align-items:center;gap:16px;margin:8px 0 16px;font:700 14px var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--primary)}
+.sec::after{content:"";flex:1;height:1px;background:var(--border)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:24px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;align-items:end;margin-bottom:28px}
+label{display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--text)}
+input,select{font:inherit;font-size:15px;color:var(--text);background:var(--card);border:1px solid var(--input);border-radius:6px;padding:8px 12px;width:100%;min-height:36px}
+input::placeholder{color:var(--muted)}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px oklch(0.6 0.205 34 / .35)}
+button{font:inherit;font-weight:500;font-size:14px;border:1px solid var(--input);background:transparent;color:var(--text);border-radius:6px;padding:8px 14px;cursor:pointer;transition:background .15s}
+button:hover{background:var(--secondary)}
+button:disabled{opacity:.6;cursor:default}
+button.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-text);font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+button.small{padding:4px 10px;font-size:13px}
+.profit-preview{font:600 18px var(--display);letter-spacing:.03em;padding:6px 0}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:28px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.stat.total{border-color:var(--primary)}
+.stat .k{font:600 13px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font:700 26px/1.2 var(--display);margin-top:4px;font-variant-numeric:tabular-nums}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+.toolbar label{min-width:150px;font-size:13px;color:var(--muted)}
+.toolbar .spacer{flex:1}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+th{font:600 13px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none;background:var(--card)}
+td.num,th.num{text-align:right}
+tbody tr:nth-child(even){background:var(--row)}
+tbody tr:hover{background:var(--secondary)}
+tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;background:var(--card)}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+.empty{color:var(--muted);text-align:center;padding:28px}
+.actions{display:flex;gap:6px;justify-content:flex-end}
+.hint{font-size:13px;color:var(--muted);margin-top:10px}
+.center{min-height:70vh;display:flex;align-items:center;justify-content:center}
+.login{width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px;margin:0}
+.login h2{margin:0;font:700 22px var(--display);letter-spacing:.03em;text-transform:uppercase}
+.login p{margin:0;color:var(--muted)}
+.err{color:var(--neg);font-size:14px;min-height:1em}
+
+@media (max-width:640px){
+  .wrap{padding:16px 16px 40px}
+  .top-in{padding:12px 16px 0;gap:4px 16px}
+  .brands{gap:12px}
+  .brand{min-width:0;padding-bottom:10px}
+  .brand b{font-size:17px;white-space:normal;line-height:1.1}
+  .brand small{font-size:10px;letter-spacing:.22em}
+  .sep{height:28px}
+  .user{width:100%;justify-content:flex-end;padding-bottom:8px;order:-1}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <nav class="brands" aria-label="Aplikace">
+      <a class="brand" id="lnk-stitky" href="/"><small>TGA SERVICE</small><b>Servisní štítek</b></a>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="brand on" aria-current="page"><small>TGA SERVICE</small><b>Průběžné zisky</b></span>
+    </nav>
+    <div class="user" id="user-box" hidden><span class="dot" id="conn-dot" title="Připojení"></span><span id="u-email"></span>
+      <button type="button" class="small" id="btn-logout">Odhlásit</button></div>
+  </div>
+</header>
+
+<!-- Chybí nastavení -->
+<div id="v-config" class="wrap center" hidden>
+  <div class="card login">
+    <h2>Chybí nastavení</h2>
+    <p>Do souboru <b>config.js</b> je potřeba doplnit adresu projektu Supabase a klíč. Postup je v souboru <b>NAVOD.md</b>.</p>
+  </div>
+</div>
+
+<!-- Přihlášení -->
+<div id="v-login" class="wrap center" hidden>
+  <form id="login-form" class="card login">
+    <h2>Přihlášení</h2>
+    <label>E-mail<input type="email" id="l-email" required autocomplete="username"></label>
+    <label>Heslo<input type="password" id="l-pass" required autocomplete="current-password"></label>
+    <div class="err" id="l-err"></div>
+    <button type="submit" class="primary" id="l-btn">Přihlásit</button>
+  </form>
+</div>
+
+<!-- Aplikace -->
+<div id="v-app" class="wrap" hidden>
+  <div class="sec" id="form-title">Nová zakázka</div>
+  <div>
+    <form id="form" class="form" autocomplete="off">
+      <label>Datum<input type="date" id="f-date" required></label>
+      <label>Kdo (zákazník)<input type="text" id="f-who" list="who-list" required placeholder="Jméno / firma"></label>
+      <label>Auto<input type="text" id="f-car" list="car-list" placeholder="Značka, model, SPZ"></label>
+      <label>Stálo nás (Kč)<input type="number" id="f-cost" step="0.01" min="0" required></label>
+      <label>Zákazník zaplatil (Kč)<input type="number" id="f-paid" step="0.01" min="0" required></label>
+      <div>
+        <div class="profit-preview">Zisk: <span id="f-profit">0 Kč</span></div>
+        <div style="display:flex;gap:8px">
+          <button type="submit" class="primary" id="f-submit">Přidat</button>
+          <button type="button" id="f-cancel" hidden>Zrušit</button>
+        </div>
+      </div>
+    </form>
+    <datalist id="who-list"></datalist>
+    <datalist id="car-list"></datalist>
+  </div>
+
+  <div class="sec">Přehled</div>
+  <div class="stats">
+    <div class="stat"><div class="k">Počet zakázek</div><div class="v" id="s-count">0</div></div>
+    <div class="stat"><div class="k">Náklady celkem</div><div class="v" id="s-cost">0 Kč</div></div>
+    <div class="stat"><div class="k">Tržby celkem</div><div class="v" id="s-paid">0 Kč</div></div>
+    <div class="stat total"><div class="k">Celkový zisk</div><div class="v" id="s-profit">0 Kč</div></div>
+  </div>
+
+  <div class="sec">Zakázky</div>
+  <div>
+    <div class="toolbar">
+      <label>Období<select id="flt-type">
+        <option value="all">Vše</option>
+        <option value="today">Dnes</option>
+        <option value="thisweek">Tento týden</option>
+        <option value="thismonth">Tento měsíc</option>
+        <option value="thisyear">Tento rok</option>
+        <option value="day">Den…</option>
+        <option value="week">Týden…</option>
+        <option value="month">Měsíc…</option>
+        <option value="year">Rok…</option>
+      </select></label>
+      <label id="pick-day" hidden>Vyberte den<input type="date" id="flt-day"></label>
+      <label id="pick-week" hidden>Den v týdnu<input type="date" id="flt-week"></label>
+      <label id="pick-month" hidden>Vyberte měsíc<input type="month" id="flt-mon"></label>
+      <label id="pick-year" hidden>Vyberte rok<input type="number" id="flt-year" min="2000" max="2100" step="1"></label>
+      <div id="nav-period" style="display:flex;gap:4px" hidden>
+        <button type="button" id="prev-period" title="Předchozí">◀</button>
+        <button type="button" id="next-period" title="Další">▶</button>
+      </div>
+      <div id="period-label" class="hint" style="align-self:center;margin:0"></div>
+      <label>Hledat<input type="search" id="flt-q" placeholder="zákazník nebo auto"></label>
+      <div class="spacer"></div>
+      <button type="button" id="btn-csv">Export do Excelu (CSV)</button>
+      <button type="button" id="btn-backup">Záloha</button>
+      <button type="button" id="btn-demo">Vložit ukázková data</button>
+      <button type="button" id="btn-demo-del" hidden>Smazat ukázková data</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-sort="date">Datum</th>
+          <th data-sort="who">Kdo</th>
+          <th data-sort="car">Auto</th>
+          <th data-sort="cost" class="num">Stálo nás</th>
+          <th data-sort="paid" class="num">Zaplatil</th>
+          <th data-sort="profit" class="num">Zisk</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="7" class="empty">Načítám…</td></tr></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+    <div class="hint">Data jsou uložená online a jsou stejná na všech zařízeních, kde se přihlásíte.</div>
+  </div>
+</div>
+
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const cfg = window.ZISKY_CONFIG || {};
+const fmt = new Intl.NumberFormat('cs-CZ',{style:'currency',currency:'CZK',maximumFractionDigits:2});
+const money = n => fmt.format(n||0);
+const fmtDate = d => { if(!d) return ''; const [y,m,dd]=d.split('-'); return `${+dd}. ${+m}. ${y}`; };
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const profitOf = r => (+r.paid||0) - (+r.cost||0);
+const cls = n => n>0?'pos':n<0?'neg':'';
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d||1); };
+const monday = d => { const x=new Date(d); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; };
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+
+const show = v => { ['v-config','v-login','v-app'].forEach(id=>$(id).hidden = id!==v); $('user-box').hidden = v!=='v-app'; };
+// V programu (.exe) vede odkaz na štítky v programu, na webu na online štítky.
+if(location.protocol!=='app:') $('lnk-stitky').href = 'https://tga-service-care-tag.lovable.app/';
+
+// ---------- databáze ----------
+let db = null, rows = [], editId = null, sort = {key:'date', dir:-1}, channel = null;
+const TABLE = 'zakazky';
+const fromDb = r => ({id:r.id, date:r.datum, who:r.kdo, car:r.auto||'', cost:+r.naklady||0, paid:+r.zaplaceno||0, demo:!!r.demo});
+const toDb = r => ({datum:r.date, kdo:r.who, auto:r.car||'', naklady:r.cost, zaplaceno:r.paid, ...(r.demo?{demo:true}:{})});
+
+function setConn(ok){ const d=$('conn-dot'); d.className='dot '+(ok?'on':'off'); d.title = ok?'Připojeno':'Bez připojení'; }
+function fail(msg, err){ console.error(err); alert(msg + (err?.message ? '\n\n'+err.message : '')); }
+
+async function loadAll(){
+  const all=[]; const page=1000;
+  for(let from=0;;from+=page){
+    const {data,error} = await db.from(TABLE).select('*').order('datum',{ascending:false}).range(from, from+page-1);
+    if(error){ setConn(false); throw error; }
+    all.push(...data); if(data.length<page) break;
+  }
+  setConn(true);
+  rows = all.map(fromDb); render();
+}
+async function refresh(){ try{ await loadAll(); }catch(e){ console.error(e); } }
+
+function subscribe(){
+  if(channel) db.removeChannel(channel);
+  let t=null;
+  channel = db.channel('zakazky-zmeny')
+    .on('postgres_changes',{event:'*',schema:'public',table:TABLE},()=>{ clearTimeout(t); t=setTimeout(refresh,300); })
+    .subscribe();
+}
+
+// ---------- přihlášení ----------
+async function start(){
+  if(!cfg.url || !cfg.anonKey || !window.supabase){ show('v-config'); return; }
+  db = window.supabase.createClient(cfg.url, cfg.anonKey);
+  db.auth.onAuthStateChange((event, session)=>{
+    if(event==='SIGNED_OUT' || !session) { show('v-login'); return; }
+    if(event==='SIGNED_IN' || event==='INITIAL_SESSION'){ setTimeout(()=>enterApp(session),0); }
+  });
+}
+let entered = false;
+async function enterApp(session){
+  $('u-email').textContent = session.user.email || '';
+  show('v-app');
+  if(entered) return; entered = true;
+  try{ await loadAll(); subscribe(); }catch(e){ fail('Nepodařilo se načíst zakázky.', e); }
+}
+$('login-form').addEventListener('submit', async e=>{
+  e.preventDefault(); $('l-err').textContent=''; $('l-btn').disabled=true;
+  const {error} = await db.auth.signInWithPassword({email:$('l-email').value.trim(), password:$('l-pass').value});
+  $('l-btn').disabled=false;
+  if(error) $('l-err').textContent = /invalid/i.test(error.message) ? 'Špatný e-mail nebo heslo.' : 'Přihlášení se nepovedlo: '+error.message;
+  else $('l-pass').value='';
+});
+$('btn-logout').addEventListener('click', async ()=>{
+  if(channel){ db.removeChannel(channel); channel=null; }
+  entered=false; rows=[]; render(); await db.auth.signOut();
+});
+window.addEventListener('focus', ()=>{ if(entered) refresh(); });
+window.addEventListener('online', ()=>{ if(entered) refresh(); });
+window.addEventListener('offline', ()=>setConn(false));
+
+// ---------- formulář ----------
+function updatePreview(){
+  const p = (+$('f-paid').value||0) - (+$('f-cost').value||0);
+  const el = $('f-profit'); el.textContent = money(p); el.className = cls(p);
+}
+['f-paid','f-cost'].forEach(id=>$(id).addEventListener('input',updatePreview));
+function resetForm(){
+  $('form').reset(); $('f-date').value = iso(new Date());
+  editId=null; $('f-submit').textContent='Přidat'; $('f-cancel').hidden=true; $('form-title').textContent='Nová zakázka'; updatePreview();
+}
+$('form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const rec = { date:$('f-date').value, who:$('f-who').value.trim(), car:$('f-car').value.trim(),
+                cost:+$('f-cost').value||0, paid:+$('f-paid').value||0 };
+  $('f-submit').disabled=true;
+  const q = editId ? db.from(TABLE).update(toDb(rec)).eq('id',editId) : db.from(TABLE).insert(toDb(rec));
+  const {error} = await q;
+  $('f-submit').disabled=false;
+  if(error) return fail('Zakázku se nepodařilo uložit. Zkontrolujte připojení k internetu.', error);
+  resetForm(); await refresh(); $('f-who').focus();
+});
+$('f-cancel').addEventListener('click', resetForm);
+
+function edit(id){
+  const r = rows.find(r=>r.id===id); if(!r) return;
+  editId=id; $('f-date').value=r.date; $('f-who').value=r.who; $('f-car').value=r.car;
+  $('f-cost').value=r.cost; $('f-paid').value=r.paid;
+  $('f-submit').textContent='Uložit změny'; $('f-cancel').hidden=false; $('form-title').textContent='Úprava zakázky'; updatePreview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function del(id){
+  const r = rows.find(r=>r.id===id);
+  if(!r || !confirm(`Smazat záznam ${fmtDate(r.date)} – ${r.who}?`)) return;
+  const {error} = await db.from(TABLE).delete().eq('id',id);
+  if(error) return fail('Záznam se nepodařilo smazat.', error);
+  if(editId===id) resetForm();
+  await refresh();
+}
+
+// ---------- období ----------
+function periodRange(){
+  const t=$('flt-type').value, now=new Date();
+  let from, to;
+  const dayR = d => [d,d];
+  const weekR = d => { const m=monday(d); return [m, addDays(m,6)]; };
+  const monR = d => [new Date(d.getFullYear(),d.getMonth(),1), new Date(d.getFullYear(),d.getMonth()+1,0)];
+  const yearR = y => [new Date(y,0,1), new Date(y,11,31)];
+  switch(t){
+    case 'today': [from,to]=dayR(now); break;
+    case 'thisweek': [from,to]=weekR(now); break;
+    case 'thismonth': [from,to]=monR(now); break;
+    case 'thisyear': [from,to]=yearR(now.getFullYear()); break;
+    case 'day': if(!$('flt-day').value) return null; [from,to]=dayR(parse($('flt-day').value)); break;
+    case 'week': if(!$('flt-week').value) return null; [from,to]=weekR(parse($('flt-week').value)); break;
+    case 'month': if(!$('flt-mon').value) return null; [from,to]=monR(parse($('flt-mon').value)); break;
+    case 'year': if(!$('flt-year').value) return null; [from,to]=yearR(+$('flt-year').value); break;
+    default: return null;
+  }
+  return [iso(from), iso(to)];
+}
+function updatePeriodUI(){
+  const t=$('flt-type').value;
+  ['day','week','month','year'].forEach(k=>$('pick-'+k).hidden = t!==k);
+  $('nav-period').hidden = !['day','week','month','year'].includes(t);
+  const r=periodRange();
+  $('period-label').textContent = r ? (r[0]===r[1] ? fmtDate(r[0]) : `${fmtDate(r[0])} – ${fmtDate(r[1])}`) : '';
+}
+$('flt-type').addEventListener('change',()=>{
+  const t=$('flt-type').value, now=new Date();
+  if(t==='day' && !$('flt-day').value) $('flt-day').value=iso(now);
+  if(t==='week' && !$('flt-week').value) $('flt-week').value=iso(now);
+  if(t==='month' && !$('flt-mon').value) $('flt-mon').value=iso(now).slice(0,7);
+  if(t==='year' && !$('flt-year').value) $('flt-year').value=now.getFullYear();
+  render();
+});
+['flt-day','flt-week','flt-mon','flt-year'].forEach(id=>$(id).addEventListener('input',render));
+function shiftPeriod(dir){
+  const t=$('flt-type').value;
+  if(t==='day'){ $('flt-day').value=iso(addDays(parse($('flt-day').value),dir)); }
+  else if(t==='week'){ $('flt-week').value=iso(addDays(parse($('flt-week').value),7*dir)); }
+  else if(t==='month'){ const d=parse($('flt-mon').value); $('flt-mon').value=iso(new Date(d.getFullYear(),d.getMonth()+dir,1)).slice(0,7); }
+  else if(t==='year'){ $('flt-year').value=(+$('flt-year').value)+dir; }
+  render();
+}
+$('prev-period').addEventListener('click',()=>shiftPeriod(-1));
+$('next-period').addEventListener('click',()=>shiftPeriod(1));
+function filtered(){
+  const r=periodRange(), q=$('flt-q').value.trim().toLowerCase();
+  return rows.filter(x=>(!r || (x.date>=r[0] && x.date<=r[1])) && (!q || (x.who+' '+x.car).toLowerCase().includes(q)));
+}
+
+// ---------- vykreslení ----------
+function render(){
+  updatePeriodUI();
+  const hasDemo=rows.some(r=>r.demo); $('btn-demo').hidden=hasDemo; $('btn-demo-del').hidden=!hasDemo;
+  $('who-list').innerHTML=[...new Set(rows.map(r=>r.who).filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('');
+  $('car-list').innerHTML=[...new Set(rows.map(r=>r.car).filter(Boolean))].map(v=>`<option value="${esc(v)}">`).join('');
+
+  const list = filtered().map(r=>({...r,profit:profitOf(r)}));
+  list.sort((a,b)=>{ const x=a[sort.key], y=b[sort.key];
+    return (typeof x==='number'? x-y : String(x).localeCompare(String(y),'cs'))*sort.dir; });
+
+  $('tbody').innerHTML = list.length ? list.map(r=>`<tr>
+    <td>${fmtDate(r.date)}</td><td>${esc(r.who)}</td><td>${esc(r.car)}</td>
+    <td class="num">${money(r.cost)}</td><td class="num">${money(r.paid)}</td>
+    <td class="num ${cls(r.profit)}"><b>${money(r.profit)}</b></td>
+    <td><div class="actions"><button class="small" data-edit="${r.id}">Upravit</button><button class="small" data-del="${r.id}">Smazat</button></div></td>
+  </tr>`).join('') : `<tr><td colspan="7" class="empty">Žádné zakázky v tomto období</td></tr>`;
+
+  const tc=list.reduce((s,r)=>s+r.cost,0), tp=list.reduce((s,r)=>s+r.paid,0), tz=tp-tc;
+  $('tfoot').innerHTML = list.length ? `<tr><td colspan="3">Celkem (${list.length})</td>
+    <td class="num">${money(tc)}</td><td class="num">${money(tp)}</td><td class="num ${cls(tz)}">${money(tz)}</td><td></td></tr>` : '';
+  $('s-count').textContent=list.length; $('s-cost').textContent=money(tc); $('s-paid').textContent=money(tp);
+  $('s-profit').textContent=money(tz); $('s-profit').className='v '+cls(tz);
+
+  document.querySelectorAll('th[data-sort]').forEach(th=>{
+    const base=th.textContent.replace(/ [▲▼]$/,''); th.textContent = base + (th.dataset.sort===sort.key?(sort.dir>0?' ▲':' ▼'):'');
+  });
+}
+$('tbody').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.edit) edit(b.dataset.edit); else if(b.dataset.del) del(b.dataset.del);
+});
+document.querySelectorAll('th[data-sort]').forEach(th=>th.addEventListener('click',()=>{
+  const k=th.dataset.sort; sort = sort.key===k ? {key:k,dir:-sort.dir} : {key:k,dir:1}; render();
+}));
+$('flt-q').addEventListener('input',render);
+
+// ---------- export ----------
+function download(name, content, type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+const today = () => iso(new Date());
+$('btn-csv').addEventListener('click',()=>{
+  const q = v => `"${String(v).replace(/"/g,'""')}"`;
+  const n = v => String(v).replace('.',',');
+  const lines=[['Datum','Kdo','Auto','Stálo nás','Zákazník zaplatil','Zisk'].map(q).join(';')];
+  filtered().forEach(r=>lines.push([fmtDate(r.date),r.who,r.car].map(q).concat([n(r.cost),n(r.paid),n(profitOf(r))]).join(';')));
+  download(`zisky-${today()}.csv`, '﻿'+lines.join('\r\n'), 'text/csv;charset=utf-8');
+});
+$('btn-backup').addEventListener('click',()=>download(`zisky-zaloha-${today()}.json`, JSON.stringify(rows,null,2), 'application/json'));
+
+// ---------- ukázková data ----------
+function makeDemo(){
+  let seed=12345; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const who=['Jan Novák','Petr Svoboda','Marie Dvořáková','AutoTrans s.r.o.','Lukáš Černý','Eva Procházková',
+    'Stavby Kučera s.r.o.','Tomáš Veselý','Jana Horáková','Martin Marek','Pekárna Pospíšil','Karel Pokorný',
+    'Lenka Králová','Logistika Beneš','Jiří Fiala','Hana Růžičková','Ondřej Kolář','Taxi Rychlík'];
+  const cars=['Škoda Octavia 3T2 4581','Škoda Fabia 5A8 1123','VW Golf 2AB 9934','Ford Focus 7C1 4410',
+    'Hyundai i30 1SC 7788','Škoda Superb 4E9 2201','Toyota Corolla 6P3 5512','Renault Mégane 8J4 0937',
+    'VW Passat 3S7 6620','Kia Ceed 2K5 3315','Peugeot 308 9H1 8820','Ford Transit 5T6 1400','Dacia Duster 1D2 7741',
+    'BMW 320d 4BM 3020','Škoda Kodiaq 7K8 5503','Opel Astra 2O4 9116'];
+  const carOf={}; who.forEach(w=>carOf[w]=pick(cars));
+  const out=[]; const now=new Date(), start=new Date(now.getFullYear(),0,1), end=addDays(now,-1);
+  for(let d=new Date(start); d<=end; d=addDays(d,1)){
+    const dow=d.getDay(); if(dow===0) continue;
+    let n = dow===6 ? (rnd()<0.4?1:0) : Math.floor(rnd()*3);
+    if(d.getMonth()===7) n = rnd()<0.5?n:0;
+    for(let i=0;i<n;i++){
+      const w=pick(who);
+      const cost=Math.round((800+rnd()*rnd()*40000)/100)*100;
+      let margin=0.12+rnd()*0.3; if(rnd()<0.05) margin=-0.05-rnd()*0.1;
+      const paid=Math.round(cost*(1+margin)/100)*100;
+      out.push({demo:true, date:iso(d), who:w, car:rnd()<0.8?carOf[w]:pick(cars), cost, paid});
+    }
+  }
+  return out;
+}
+$('btn-demo').addEventListener('click', async ()=>{
+  const demo = makeDemo();
+  if(!confirm(`Vložit ${demo.length} ukázkových zakázek? Uvidí je všichni přihlášení, později je smažete jedním tlačítkem.`)) return;
+  $('btn-demo').disabled=true;
+  const {error} = await db.from(TABLE).insert(demo.map(toDb));
+  $('btn-demo').disabled=false;
+  if(error) return fail('Ukázková data se nepodařilo vložit.', error);
+  $('flt-type').value='thisyear'; await refresh();
+});
+$('btn-demo-del').addEventListener('click', async ()=>{
+  const n=rows.filter(r=>r.demo).length;
+  if(!confirm(`Smazat ${n} ukázkových zakázek? Vaše vlastní zakázky zůstanou.`)) return;
+  const {error} = await db.from(TABLE).delete().eq('demo',true);
+  if(error) return fail('Ukázková data se nepodařilo smazat.', error);
+  await refresh();
+});
+
+resetForm(); render(); start();
+</script>
+</body>
+</html>
