@@ -85,6 +85,7 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
 .login h2{margin:0;font:700 22px var(--display);letter-spacing:.03em;text-transform:uppercase}
 .login p{margin:0;color:var(--muted)}
 .err{color:var(--neg);font-size:14px;min-height:1em}
+.backup-card{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:28px 0 8px}
 
 @media (max-width:640px){
   .wrap{padding:16px 16px 40px}
@@ -237,9 +238,11 @@ details.rec summary{cursor:pointer;color:var(--muted);font-size:14px;margin-bott
       <div><button type="submit">Přidat pravidelnou platbu</button></div>
     </form>
   </details>
+  <div id="zaloha"></div>
 </div>
 
 <script src="../zisky/vendor/supabase.js"></script>
+<script src="../zisky/vendor/zaloha.js"></script>
 <script src="../zisky/config.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -290,6 +293,7 @@ async function enterApp(session){
   $('u-email').textContent = session.user.email || '';
   show('v-app');
   if(entered) return; entered=true;
+  TGA_ZALOHA.mount('zaloha', ()=>db);
   try{ await loadYear(); }catch(e){ return fail('Nepodařilo se načíst data. Je v Supabase spuštěný finance/schema.sql?', e); }
   let t=null;
   channel = db.channel('pohyby-zmeny').on('postgres_changes',{event:'*',schema:'public',table:'pohyby'},()=>{clearTimeout(t);t=setTimeout(refresh,300);}).subscribe();

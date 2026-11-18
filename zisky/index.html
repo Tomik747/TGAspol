@@ -85,6 +85,15 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
 .login h2{margin:0;font:700 22px var(--display);letter-spacing:.03em;text-transform:uppercase}
 .login p{margin:0;color:var(--muted)}
 .err{color:var(--neg);font-size:14px;min-height:1em}
+/* tabulka zakázek s mřížkou; Poulík oranžově */
+table.grid{font-size:15px}
+table.grid th,table.grid td{border:1px solid var(--border);padding:10px 12px}
+table.grid tbody tr.os td:first-child{box-shadow:inset 4px 0 0 var(--pos)}
+table.grid tbody tr.po td:first-child{box-shadow:inset 4px 0 0 oklch(0.78 0.14 75)}
+table.grid .amt{font:700 18px var(--display);letter-spacing:.02em}
+.tag-po{font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;margin-left:8px;background:oklch(0.35 0.06 70);color:oklch(0.85 0.12 75)}
+td.note{color:var(--muted)}
+.backup-card{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:28px 0 8px}
 
 @media (max-width:640px){
   .wrap{padding:16px 16px 40px}
@@ -189,12 +198,11 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
       <label>Hledat<input type="search" id="flt-q" placeholder="zákazník nebo auto"></label>
       <div class="spacer"></div>
       <button type="button" id="btn-csv">Export do Excelu (CSV)</button>
-      <button type="button" id="btn-backup">Záloha</button>
       <button type="button" id="btn-demo">Vložit ukázková data</button>
       <button type="button" id="btn-demo-del" hidden>Smazat ukázková data</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table class="grid">
         <thead><tr>
           <th data-sort="date">Datum</th>
           <th data-sort="who">Kdo</th>
@@ -209,10 +217,12 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
       </table>
     </div>
     <div class="hint">Data jsou uložená online a jsou stejná na všech zařízeních, kde se přihlásíte.</div>
+    <div id="zaloha"></div>
   </div>
 </div>
 
 <script src="vendor/supabase.js"></script>
+<script src="vendor/zaloha.js"></script>
 <script src="config.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -223,6 +233,8 @@ const fmtDate = d => { if(!d) return ''; const [y,m,dd]=d.split('-'); return `${
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const profitOf = r => (+r.paid||0) - (+r.cost||0);
 const cls = n => n>0?'pos':n<0?'neg':'';
+// Zakázky od Poulíka (největší zákazník) se poznají podle jména v poli „Kdo“.
+const isPoulik = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().includes('poulik');
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const parse = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d||1); };
 const monday = d => { const x=new Date(d); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; };
@@ -276,6 +288,7 @@ async function enterApp(session){
   $('u-email').textContent = session.user.email || '';
   show('v-app');
   if(entered) return; entered = true;
+  TGA_ZALOHA.mount('zaloha', ()=>db);
   try{ await loadAll(); subscribe(); }catch(e){ fail('Nepodařilo se načíst zakázky.', e); }
 }
 $('login-form').addEventListener('submit', async e=>{
@@ -395,16 +408,17 @@ function render(){
   list.sort((a,b)=>{ const x=a[sort.key], y=b[sort.key];
     return (typeof x==='number'? x-y : String(x).localeCompare(String(y),'cs'))*sort.dir; });
 
-  $('tbody').innerHTML = list.length ? list.map(r=>`<tr>
-    <td>${fmtDate(r.date)}</td><td>${esc(r.who)}</td><td>${esc(r.car)}</td>
+  const signed = n => (n>0?'+':n<0?'−':'') + money(Math.abs(n));
+  $('tbody').innerHTML = list.length ? list.map(r=>{ const po=isPoulik(r.who); return `<tr class="${po?'po':'os'}">
+    <td>${fmtDate(r.date)}</td><td>${esc(r.who)}${po?'<span class="tag-po">Poulík</span>':''}</td><td class="note">${esc(r.car)}</td>
     <td class="num">${money(r.cost)}</td><td class="num">${money(r.paid)}</td>
-    <td class="num ${cls(r.profit)}"><b>${money(r.profit)}</b></td>
+    <td class="num amt ${cls(r.profit)}">${signed(r.profit)}</td>
     <td><div class="actions"><button class="small" data-edit="${r.id}">Upravit</button><button class="small" data-del="${r.id}">Smazat</button></div></td>
-  </tr>`).join('') : `<tr><td colspan="7" class="empty">Žádné zakázky v tomto období</td></tr>`;
+  </tr>`; }).join('') : `<tr><td colspan="7" class="empty">Žádné zakázky v tomto období</td></tr>`;
 
   const tc=list.reduce((s,r)=>s+r.cost,0), tp=list.reduce((s,r)=>s+r.paid,0), tz=tp-tc;
   $('tfoot').innerHTML = list.length ? `<tr><td colspan="3">Celkem (${list.length})</td>
-    <td class="num">${money(tc)}</td><td class="num">${money(tp)}</td><td class="num ${cls(tz)}">${money(tz)}</td><td></td></tr>` : '';
+    <td class="num">${money(tc)}</td><td class="num">${money(tp)}</td><td class="num amt ${cls(tz)}">${signed(tz)}</td><td></td></tr>` : '';
   $('s-count').textContent=list.length; $('s-cost').textContent=money(tc); $('s-paid').textContent=money(tp);
   $('s-profit').textContent=money(tz); $('s-profit').className='v '+cls(tz);
 
@@ -434,7 +448,6 @@ $('btn-csv').addEventListener('click',()=>{
   filtered().forEach(r=>lines.push([fmtDate(r.date),r.who,r.car].map(q).concat([n(r.cost),n(r.paid),n(profitOf(r))]).join(';')));
   download(`zisky-${today()}.csv`, '﻿'+lines.join('\r\n'), 'text/csv;charset=utf-8');
 });
-$('btn-backup').addEventListener('click',()=>download(`zisky-zaloha-${today()}.json`, JSON.stringify(rows,null,2), 'application/json'));
 
 // ---------- ukázková data ----------
 function makeDemo(){
