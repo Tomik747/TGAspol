@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<script>if(location.protocol==="http:"&&location.hostname==="aplikace.tgaservice.cz")location.replace("https:"+location.href.slice(5));</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1c1917">
+<meta name="robots" content="noindex, nofollow">
+<title>Příjmy a výdaje – TGA SERVICE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Barvy a písmo jako aplikace Servisní štítky (tga-service-care-tag/src/styles.css). */
+:root{
+  --bg:oklch(0.2 0.006 50); --card:oklch(0.245 0.007 50); --text:oklch(0.96 0.006 80);
+  --muted:oklch(0.7 0.01 70); --border:oklch(0.34 0.008 50); --input:oklch(0.38 0.008 50);
+  --secondary:oklch(0.31 0.008 50); --primary:oklch(0.6 0.205 34); --primary-text:oklch(0.99 0 0);
+  --pos:oklch(0.76 0.15 150); --neg:oklch(0.7 0.19 25); --row:oklch(0.225 0.007 50);
+  --font:"Barlow",ui-sans-serif,system-ui,sans-serif;
+  --display:"Barlow Condensed","Barlow",ui-sans-serif,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1152px;margin:0 auto;padding:24px 24px 48px}
+
+/* hlavička s přepínačem */
+.top{border-bottom:1px solid var(--border)}
+.top-in{max-width:1152px;margin:0 auto;padding:16px 24px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 24px}
+.brands{display:flex;align-items:flex-end;gap:24px;flex:1;min-width:0}
+.brand{display:block;color:var(--muted);text-decoration:none;padding-bottom:12px;border-bottom:2px solid transparent;transition:color .15s}
+a.brand:hover{color:var(--text)}
+.brand.on{color:var(--text);border-bottom-color:var(--primary)}
+.brand small{display:block;font:600 12px var(--display);letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.brand b{display:block;font:700 24px/1.2 var(--display);letter-spacing:.025em;text-transform:uppercase;white-space:nowrap}
+.sep{width:1px;height:36px;background:var(--border);margin-bottom:14px}
+.user{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;padding-bottom:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.on{background:var(--pos)} .dot.off{background:var(--neg)}
+
+/* nadpisy sekcí jako „VÝMĚNA“ na štítcích */
+.sec{display:flex;align-items:center;gap:16px;margin:8px 0 16px;font:700 14px var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--primary)}
+.sec::after{content:"";flex:1;height:1px;background:var(--border)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:24px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;align-items:end;margin-bottom:28px}
+label{display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--text)}
+input,select{font:inherit;font-size:15px;color:var(--text);background:var(--card);border:1px solid var(--input);border-radius:6px;padding:8px 12px;width:100%;min-height:36px}
+input::placeholder{color:var(--muted)}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px oklch(0.6 0.205 34 / .35)}
+button{font:inherit;font-weight:500;font-size:14px;border:1px solid var(--input);background:transparent;color:var(--text);border-radius:6px;padding:8px 14px;cursor:pointer;transition:background .15s}
+button:hover{background:var(--secondary)}
+button:disabled{opacity:.6;cursor:default}
+button.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-text);font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+button.small{padding:4px 10px;font-size:13px}
+.profit-preview{font:600 18px var(--display);letter-spacing:.03em;padding:6px 0}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:28px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.stat.total{border-color:var(--primary)}
+.stat .k{font:600 13px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font:700 26px/1.2 var(--display);margin-top:4px;font-variant-numeric:tabular-nums}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+.toolbar label{min-width:150px;font-size:13px;color:var(--muted)}
+.toolbar .spacer{flex:1}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+th{font:600 13px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none;background:var(--card)}
+td.num,th.num{text-align:right}
+tbody tr:nth-child(even){background:var(--row)}
+tbody tr:hover{background:var(--secondary)}
+tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;background:var(--card)}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+.empty{color:var(--muted);text-align:center;padding:28px}
+.actions{display:flex;gap:6px;justify-content:flex-end}
+.hint{font-size:13px;color:var(--muted);margin-top:10px}
+.center{min-height:70vh;display:flex;align-items:center;justify-content:center}
+.login{width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px;margin:0}
+.login-kicker{display:block;font:600 12px var(--display);letter-spacing:.3em;color:var(--muted);margin-bottom:2px}
+.login h2{margin:0;font:700 22px var(--display);letter-spacing:.03em;text-transform:uppercase}
+.login p{margin:0;color:var(--muted)}
+.err{color:var(--neg);font-size:14px;min-height:1em}
+
+@media (max-width:640px){
+  .wrap{padding:16px 16px 40px}
+  .top-in{padding:12px 16px 0;gap:4px 16px}
+  .brands{gap:12px}
+  .brand{min-width:0;padding-bottom:10px}
+  .brand b{font-size:17px;white-space:normal;line-height:1.1}
+  .brand small{font-size:10px;letter-spacing:.22em}
+  .sep{height:28px}
+  .user{width:100%;justify-content:flex-end;padding-bottom:8px;order:-1}
+}
+</style>
+<style>
+/* doplňky pro Příjmy a výdaje */
+.seg{display:inline-flex;border:1px solid var(--input);border-radius:6px;padding:2px;gap:2px}
+.seg button{border:0;padding:6px 12px;color:var(--muted);background:transparent}
+.seg button.on{background:var(--secondary);color:var(--text)}
+.seg button.on.in{color:var(--pos)} .seg button.on.out{color:var(--primary)}
+.bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-items:end;height:150px}
+.bar{display:flex;gap:2px;align-items:flex-end;height:100%;cursor:pointer;border-radius:6px;padding:4px 3px 0;border:0;background:transparent}
+.bar:hover{background:var(--row)} .bar.sel{background:var(--secondary)}
+.bar i{flex:1;border-radius:2px 2px 0 0;min-height:1px}
+.mlab{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;text-align:center;color:var(--muted);font:600 12px var(--display);letter-spacing:.06em;text-transform:uppercase;margin:6px 0 8px}
+.mlab .sel{color:var(--text)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;color:var(--muted);font-size:13px;margin-bottom:10px}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.list{max-height:420px;overflow:auto}
+.note{color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 24px;margin-bottom:28px}
+.cat .row{display:flex;justify-content:space-between;gap:8px}
+.meter{height:6px;background:var(--secondary);border-radius:3px;overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%}
+.share{font:600 13px var(--font);color:var(--muted);margin-left:6px}
+.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat .v{font-size:24px}
+.stat.split .v small{font:600 14px var(--font);color:var(--muted);margin-left:6px}
+.sec-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-6px 0 16px}
+details.rec{margin-bottom:28px}
+details.rec summary{cursor:pointer;color:var(--muted);font-size:14px;margin-bottom:10px}
+.yearpick{display:flex;align-items:center;gap:6px}
+.yearpick b{font:700 20px var(--display);min-width:56px;text-align:center}
+</style>
+</head>
+<body>
+
+<header class="top" id="top" hidden>
+  <div class="top-in">
+    <nav class="brands" aria-label="Aplikace">
+      <a class="brand" href="../"><small>TGA SERVICE</small><b>Servisní štítek</b></a>
+      <span class="sep" aria-hidden="true"></span>
+      <a class="brand" href="../zisky/"><small>TGA SERVICE</small><b>Průběžné zisky</b></a>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="brand on" aria-current="page"><small>TGA SERVICE</small><b>Příjmy a výdaje</b></span>
+    </nav>
+    <div class="user" id="user-box" hidden><span class="dot" id="conn-dot" title="Připojení"></span><span id="u-email"></span>
+      <button type="button" class="small" id="btn-logout">Odhlásit</button></div>
+  </div>
+</header>
+
+<div id="v-config" class="wrap center" hidden>
+  <div class="card login"><h2>Chybí nastavení</h2><p>Chybí soubor <b>zisky/config.js</b> s připojením k Supabase.</p></div>
+</div>
+
+<div id="v-login" class="wrap center" hidden>
+  <form id="login-form" class="card login">
+    <div><small class="login-kicker">TGA SERVICE</small><h2>Přihlášení</h2></div>
+    <label>E-mail<input type="email" id="l-email" required autocomplete="username"></label>
+    <label>Heslo<input type="password" id="l-pass" required autocomplete="current-password"></label>
+    <div class="err" id="l-err"></div>
+    <button type="submit" class="primary" id="l-btn">Přihlásit</button>
+  </form>
+</div>
+
+<div id="v-app" class="wrap" hidden>
+  <div class="sec">
+    <span class="yearpick"><button type="button" class="small" id="y-prev" title="Předchozí rok">◀</button><b id="y-label">2026</b><button type="button" class="small" id="y-next" title="Další rok">▶</button></span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Příjmy za rok</div><div class="v" id="y-in">0 Kč</div></div>
+    <div class="stat"><div class="k">Výdaje za rok</div><div class="v" id="y-out">0 Kč</div></div>
+    <div class="stat total"><div class="k">Rozdíl za rok</div><div class="v" id="y-diff">0 Kč</div></div>
+    <div class="stat split"><div class="k">Od Poulíka</div><div class="v" id="y-poulik">0 Kč</div></div>
+    <div class="stat split"><div class="k">Od ostatních zákazníků</div><div class="v" id="y-ostatni">0 Kč</div></div>
+  </div>
+  <div class="legend"><span><b style="background:var(--pos)"></b>Příjmy</span><span><b style="background:var(--primary)"></b>Výdaje</span><span>Kliknutím na měsíc zobrazíte jeho rozpis.</span></div>
+  <div class="bars" id="bars"></div>
+  <div class="mlab" id="mlab"></div>
+
+  <div class="sec" id="m-title">Měsíc</div>
+  <div class="sec-tools">
+    <button type="button" class="small" id="m-prev">◀ Předchozí měsíc</button>
+    <button type="button" class="small" id="m-next">Další měsíc ▶</button>
+    <span class="spacer" style="flex:1"></span>
+    <button type="button" class="small" id="btn-recur" hidden>Doplnit pravidelné platby</button>
+    <button type="button" class="small" id="btn-csv">Export měsíce (CSV)</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Příjmy</div><div class="v" id="m-in">0 Kč</div></div>
+    <div class="stat"><div class="k">Výdaje</div><div class="v" id="m-out">0 Kč</div></div>
+    <div class="stat total"><div class="k">Rozdíl</div><div class="v" id="m-diff">0 Kč</div></div>
+    <div class="stat split"><div class="k">Od Poulíka</div><div class="v" id="m-poulik">0 Kč</div></div>
+    <div class="stat split"><div class="k">Od ostatních zákazníků</div><div class="v" id="m-ostatni">0 Kč</div></div>
+  </div>
+
+  <div class="sec" id="form-title">Nový záznam</div>
+  <form id="form" class="form" autocomplete="off">
+    <label>Druh<span class="seg" role="group" aria-label="Druh">
+      <button type="button" data-typ="prijem" class="on in">Příjem</button><button type="button" data-typ="vydaj" class="out">Výdaj</button></span></label>
+    <label>Datum<input type="date" id="f-date" required></label>
+    <label>Kategorie<input type="text" id="f-cat" list="cat-list" required placeholder="např. Zakázky"></label>
+    <label>Částka (Kč)<input type="number" id="f-amount" step="1" min="0" required></label>
+    <label>Poznámka<input type="text" id="f-note" placeholder="např. fabia rozvody"></label>
+    <div style="display:flex;gap:8px"><button type="submit" class="primary" id="f-submit">Přidat</button><button type="button" id="f-cancel" hidden>Zrušit</button></div>
+  </form>
+  <datalist id="cat-list"></datalist>
+
+  <div class="two">
+    <div><div class="sec" style="color:var(--pos)">Příjmy</div><div class="table-wrap list"><table>
+      <thead><tr><th>Den</th><th>Kategorie</th><th>Poznámka</th><th class="num">Kč</th><th></th></tr></thead><tbody id="t-in"></tbody></table></div></div>
+    <div><div class="sec">Výdaje</div><div class="table-wrap list"><table>
+      <thead><tr><th>Den</th><th>Kategorie</th><th>Poznámka</th><th class="num">Kč</th><th></th></tr></thead><tbody id="t-out"></tbody></table></div></div>
+  </div>
+
+  <div class="sec" style="margin-top:28px">Výdaje podle kategorií</div>
+  <div class="cats" id="cats-out"></div>
+  <div class="sec">Příjmy podle kategorií</div>
+  <div class="cats" id="cats-in"></div>
+
+  <details class="rec">
+    <summary>Pravidelné platby (doplňují se tlačítkem „Doplnit pravidelné platby“)</summary>
+    <div class="table-wrap"><table><thead><tr><th>Den</th><th>Druh</th><th>Kategorie</th><th class="num">Kč</th><th></th></tr></thead><tbody id="t-rec"></tbody></table></div>
+    <form id="rec-form" class="form" style="margin-top:14px" autocomplete="off">
+      <label>Den v měsíci<input type="number" id="r-day" min="1" max="31" required></label>
+      <label>Druh<select id="r-typ"><option value="vydaj">Výdaj</option><option value="prijem">Příjem</option></select></label>
+      <label>Kategorie<input type="text" id="r-cat" list="cat-list" required></label>
+      <label>Částka (Kč)<input type="number" id="r-amount" min="0" step="1" required></label>
+      <div><button type="submit">Přidat pravidelnou platbu</button></div>
+    </form>
+  </details>
+</div>
+
+<script src="../zisky/vendor/supabase.js"></script>
+<script src="../zisky/config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const cfg = window.ZISKY_CONFIG || {};
+const money = n => new Intl.NumberFormat('cs-CZ',{style:'currency',currency:'CZK',maximumFractionDigits:0}).format(Math.round(n||0));
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const MON = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+const MSHORT = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
+// Zakázky Poulík = největší zákazník, Zakázky = ostatní zákazníci.
+const CAT_POULIK = 'Zakázky Poulík', CAT_OSTATNI = 'Zakázky';
+const DEFAULT_CATS = {prijem:['Zakázky','Zakázky Poulík','Balance'],
+  vydaj:['IAG','Intercars','Rall','LKQ','ostatní díly','Jarek','Tom','Brigádníci','Nájem+Energie','kapital pujcka','STK','vybavení','ostatní výlohy']};
+const show = v => { ['v-config','v-login','v-app'].forEach(id=>$(id).hidden = id!==v); $('user-box').hidden = $('top').hidden = v!=='v-app'; };
+
+let db=null, rows=[], recur=[], year=new Date().getFullYear(), month=new Date().getMonth(), typ='prijem', editId=null, entered=false, channel=null;
+
+function fail(msg, err){ console.error(err); alert(msg + (err?.message ? '\n\n'+err.message : '')); }
+function setConn(ok){ const d=$('conn-dot'); d.className='dot '+(ok?'on':'off'); }
+
+async function loadYear(){
+  const all=[];
+  for(let from=0;;from+=1000){
+    const {data,error} = await db.from('pohyby').select('*').gte('datum',`${year}-01-01`).lte('datum',`${year}-12-31`)
+      .order('datum',{ascending:true}).range(from,from+999);
+    if(error){ setConn(false); throw error; }
+    all.push(...data); if(data.length<1000) break;
+  }
+  const r = await db.from('pravidelne_platby').select('*').order('den');
+  if(r.error) throw r.error;
+  setConn(true);
+  rows = all.map(x=>({...x, castka:+x.castka})); recur = r.data.map(x=>({...x, castka:+x.castka}));
+  render();
+}
+async function refresh(){ try{ await loadYear(); }catch(e){ console.error(e); } }
+
+async function start(){
+  if(!cfg.url || !cfg.anonKey || !window.supabase){ show('v-config'); return; }
+  db = window.supabase.createClient(cfg.url, cfg.anonKey);
+  db.auth.onAuthStateChange((event, session)=>{
+    if(event==='SIGNED_OUT' || !session){ show('v-login'); return; }
+    if(event==='SIGNED_IN' || event==='INITIAL_SESSION') setTimeout(()=>enterApp(session),0);
+  });
+}
+async function enterApp(session){
+  $('u-email').textContent = session.user.email || '';
+  show('v-app');
+  if(entered) return; entered=true;
+  try{ await loadYear(); }catch(e){ return fail('Nepodařilo se načíst data. Je v Supabase spuštěný finance/schema.sql?', e); }
+  let t=null;
+  channel = db.channel('pohyby-zmeny').on('postgres_changes',{event:'*',schema:'public',table:'pohyby'},()=>{clearTimeout(t);t=setTimeout(refresh,300);}).subscribe();
+}
+$('login-form').addEventListener('submit', async e=>{
+  e.preventDefault(); $('l-err').textContent=''; $('l-btn').disabled=true;
+  const {error} = await db.auth.signInWithPassword({email:$('l-email').value.trim(), password:$('l-pass').value});
+  $('l-btn').disabled=false;
+  if(error) $('l-err').textContent = /invalid/i.test(error.message) ? 'Špatný e-mail nebo heslo.' : 'Přihlášení se nepovedlo: '+error.message;
+  else $('l-pass').value='';
+});
+$('btn-logout').addEventListener('click', async ()=>{ if(channel){db.removeChannel(channel);channel=null;} entered=false; rows=[]; await db.auth.signOut(); });
+window.addEventListener('focus', ()=>{ if(entered) refresh(); });
+
+// ---------- výpočty ----------
+const sum = (list) => list.reduce((s,x)=>s+x.castka,0);
+const ofMonth = m => rows.filter(x=>+x.datum.slice(5,7)===m+1);
+function split(list){
+  const inc=list.filter(x=>x.typ==='prijem');
+  return { in:sum(inc), out:sum(list.filter(x=>x.typ==='vydaj')),
+    poulik:sum(inc.filter(x=>x.kategorie===CAT_POULIK)), ostatni:sum(inc.filter(x=>x.kategorie===CAT_OSTATNI)) };
+}
+function setStat(id,val,cls){ const el=$(id); el.innerHTML=money(val); el.className='v'+(cls?' '+cls:''); }
+function setShare(id,val,base){ const p = base>0 ? Math.round(val/base*100) : 0; $(id).innerHTML = money(val)+`<small>${p} %</small>`; }
+
+// ---------- vykreslení ----------
+function render(){
+  $('y-label').textContent = year;
+  const y = split(rows);
+  setStat('y-in',y.in); setStat('y-out',y.out); setStat('y-diff',y.in-y.out, y.in-y.out<0?'neg':'pos');
+  setShare('y-poulik',y.poulik,y.poulik+y.ostatni); setShare('y-ostatni',y.ostatni,y.poulik+y.ostatni);
+
+  const per = MON.map((_,i)=>split(ofMonth(i)));
+  const max = Math.max(1,...per.map(p=>Math.max(p.in,p.out)));
+  $('bars').innerHTML = per.map((p,i)=>`<button type="button" class="bar${i===month?' sel':''}" data-m="${i}" title="${MON[i]}: příjmy ${money(p.in)}, výdaje ${money(p.out)}">
+    <i style="height:${p.in/max*100}%;background:var(--pos)"></i><i style="height:${p.out/max*100}%;background:var(--primary)"></i></button>`).join('');
+  $('mlab').innerHTML = MSHORT.map((s,i)=>`<div class="${i===month?'sel':''}">${s}</div>`).join('');
+
+  const list = ofMonth(month), m = split(list);
+  $('m-title').textContent = `${MON[month]} ${year}`;
+  setStat('m-in',m.in); setStat('m-out',m.out); setStat('m-diff',m.in-m.out, m.in-m.out<0?'neg':'pos');
+  setShare('m-poulik',m.poulik,m.poulik+m.ostatni); setShare('m-ostatni',m.ostatni,m.poulik+m.ostatni);
+
+  const row = x => `<tr><td>${+x.datum.slice(8)}.</td><td>${esc(x.kategorie)}</td><td class="note" title="${esc(x.poznamka)}">${esc(x.poznamka)}</td>
+    <td class="num">${money(x.castka)}</td><td><div class="actions"><button class="small" data-edit="${x.id}">Upravit</button><button class="small" data-del="${x.id}">Smazat</button></div></td></tr>`;
+  const byDay = (a,b)=>a.datum.localeCompare(b.datum);
+  const inc = list.filter(x=>x.typ==='prijem').sort(byDay), out = list.filter(x=>x.typ==='vydaj').sort(byDay);
+  $('t-in').innerHTML = inc.length ? inc.map(row).join('') : '<tr><td colspan="5" class="empty">Žádné příjmy</td></tr>';
+  $('t-out').innerHTML = out.length ? out.map(row).join('') : '<tr><td colspan="5" class="empty">Žádné výdaje</td></tr>';
+  $('cats-out').innerHTML = catBars(out,'var(--primary)');
+  $('cats-in').innerHTML = catBars(inc,'var(--pos)');
+
+  // pravidelné platby
+  const missing = missingRecurring();
+  $('btn-recur').hidden = !missing.length;
+  $('btn-recur').textContent = `Doplnit pravidelné platby (${missing.length})`;
+  $('t-rec').innerHTML = recur.length ? recur.map(r=>`<tr><td>${r.den}.</td><td>${r.typ==='prijem'?'Příjem':'Výdaj'}</td><td>${esc(r.kategorie)}</td><td class="num">${money(r.castka)}</td>
+    <td><div class="actions"><button class="small" data-recdel="${r.id}">Smazat</button></div></td></tr>`).join('') : '<tr><td colspan="5" class="empty">Žádné pravidelné platby</td></tr>';
+
+  const cats = new Set([...DEFAULT_CATS[typ], ...rows.filter(x=>x.typ===typ).map(x=>x.kategorie)]);
+  $('cat-list').innerHTML = [...cats].map(c=>`<option value="${esc(c)}">`).join('');
+}
+function catBars(list,color){
+  const by={}; list.forEach(x=>by[x.kategorie]=(by[x.kategorie]||0)+x.castka);
+  const total=sum(list), ent=Object.entries(by).sort((a,b)=>b[1]-a[1]);
+  if(!ent.length) return '<div class="hint">Nic k zobrazení.</div>';
+  const max=ent[0][1];
+  return ent.map(([k,v])=>`<div class="cat"><div class="row"><span>${esc(k)}</span><b>${money(v)}<span class="share">${Math.round(v/total*100)} %</span></b></div>
+    <div class="meter"><i style="width:${v/max*100}%;background:${color}"></i></div></div>`).join('');
+}
+function missingRecurring(){
+  const list = ofMonth(month);
+  return recur.filter(r=>!list.some(x=>x.typ===r.typ && x.kategorie===r.kategorie && x.castka===r.castka));
+}
+
+// ---------- ovládání ----------
+$('bars').addEventListener('click', e=>{ const b=e.target.closest('[data-m]'); if(b){ month=+b.dataset.m; resetForm(); render(); } });
+$('m-prev').addEventListener('click', ()=>{ if(month===0){ year--; month=11; refresh(); } else month--; resetForm(); render(); });
+$('m-next').addEventListener('click', ()=>{ if(month===11){ year++; month=0; refresh(); } else month++; resetForm(); render(); });
+$('y-prev').addEventListener('click', ()=>{ year--; resetForm(); refresh(); });
+$('y-next').addEventListener('click', ()=>{ year++; resetForm(); refresh(); });
+
+function setTyp(t){ typ=t; document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on', b.dataset.typ===t)); render(); }
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>setTyp(b.dataset.typ)));
+
+function defaultDate(){
+  const now=new Date();
+  if(now.getFullYear()===year && now.getMonth()===month) return iso(now);
+  return `${year}-${pad(month+1)}-01`;
+}
+function resetForm(){
+  $('form').reset(); $('f-date').value=defaultDate(); editId=null;
+  $('f-submit').textContent='Přidat'; $('f-cancel').hidden=true; $('form-title').textContent='Nový záznam';
+}
+$('f-cancel').addEventListener('click', resetForm);
+$('form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const rec = {datum:$('f-date').value, typ, kategorie:$('f-cat').value.trim(), castka:+$('f-amount').value||0, poznamka:$('f-note').value.trim()};
+  $('f-submit').disabled=true;
+  const {error} = editId ? await db.from('pohyby').update(rec).eq('id',editId) : await db.from('pohyby').insert(rec);
+  $('f-submit').disabled=false;
+  if(error) return fail('Záznam se nepodařilo uložit.', error);
+  const d=rec.datum; if(+d.slice(0,4)===year) month=+d.slice(5,7)-1;
+  resetForm(); await refresh(); $('f-cat').focus();
+});
+document.querySelector('.two').addEventListener('click', async e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const x = rows.find(r=>r.id===(b.dataset.edit||b.dataset.del)); if(!x) return;
+  if(b.dataset.edit){
+    editId=x.id; setTyp(x.typ); $('f-date').value=x.datum; $('f-cat').value=x.kategorie; $('f-amount').value=x.castka; $('f-note').value=x.poznamka;
+    $('f-submit').textContent='Uložit změny'; $('f-cancel').hidden=false; $('form-title').textContent='Úprava záznamu';
+    $('form-title').scrollIntoView({behavior:'smooth',block:'start'});
+  } else if(confirm(`Smazat ${x.typ==='prijem'?'příjem':'výdaj'} ${money(x.castka)} (${x.kategorie})?`)){
+    const {error}=await db.from('pohyby').delete().eq('id',x.id);
+    if(error) return fail('Záznam se nepodařilo smazat.', error);
+    if(editId===x.id) resetForm(); await refresh();
+  }
+});
+$('btn-recur').addEventListener('click', async ()=>{
+  const miss = missingRecurring(); if(!miss.length) return;
+  const last = new Date(year, month+1, 0).getDate();
+  const ins = miss.map(r=>({datum:`${year}-${pad(month+1)}-${pad(Math.min(r.den,last))}`, typ:r.typ, kategorie:r.kategorie, castka:r.castka, poznamka:r.poznamka||''}));
+  if(!confirm(`Doplnit do měsíce ${MON[month]}:\n\n`+ins.map(x=>`${+x.datum.slice(8)}. ${x.kategorie} ${money(x.castka)}`).join('\n'))) return;
+  const {error}=await db.from('pohyby').insert(ins);
+  if(error) return fail('Pravidelné platby se nepodařilo doplnit.', error);
+  await refresh();
+});
+$('rec-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const rec={den:+$('r-day').value, typ:$('r-typ').value, kategorie:$('r-cat').value.trim(), castka:+$('r-amount').value||0};
+  const {error}=await db.from('pravidelne_platby').insert(rec);
+  if(error) return fail('Pravidelnou platbu se nepodařilo uložit.', error);
+  $('rec-form').reset(); await refresh();
+});
+$('t-rec').addEventListener('click', async e=>{
+  const b=e.target.closest('[data-recdel]'); if(!b) return;
+  const r=recur.find(x=>x.id===b.dataset.recdel);
+  if(!r || !confirm(`Smazat pravidelnou platbu ${r.kategorie} ${money(r.castka)}? Už zapsané platby zůstanou.`)) return;
+  const {error}=await db.from('pravidelne_platby').delete().eq('id',r.id);
+  if(error) return fail('Nepodařilo se smazat.', error);
+  await refresh();
+});
+$('btn-csv').addEventListener('click', ()=>{
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const lines=[['Datum','Druh','Kategorie','Částka','Poznámka'].map(q).join(';')];
+  ofMonth(month).sort((a,b)=>a.datum.localeCompare(b.datum)).forEach(x=>lines.push([x.datum,x.typ==='prijem'?'Příjem':'Výdaj',x.kategorie].map(q).concat([String(x.castka).replace('.',','), q(x.poznamka)]).join(';')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  a.download=`prijmy-vydaje-${year}-${pad(month+1)}.csv`; document.body.appendChild(a); a.click(); a.remove();
+});
+
+resetForm(); render(); start();
+</script>
+</body>
+</html>
