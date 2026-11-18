@@ -333,7 +333,8 @@ function render(){
   setStat('m-in',m.in); setStat('m-out',m.out); setStat('m-diff',m.in-m.out, m.in-m.out<0?'neg':'pos');
   setShare('m-poulik',m.poulik,m.poulik+m.ostatni); setShare('m-ostatni',m.ostatni,m.poulik+m.ostatni);
 
-  const byDay = (a,b)=>a.datum.localeCompare(b.datum) || (a.typ===b.typ ? 0 : a.typ==='prijem' ? -1 : 1);
+  // Nejnovější den nahoře, 1. den v měsíci dole; v rámci dne příjmy před výdaji.
+  const byDay = (a,b)=>b.datum.localeCompare(a.datum) || (a.typ===b.typ ? 0 : a.typ==='prijem' ? -1 : 1);
   const inc = list.filter(x=>x.typ==='prijem'), out = list.filter(x=>x.typ==='vydaj');
   const shown = list.filter(x=>tFilter==='all' || x.typ===tFilter).sort(byDay);
   const row = x => { const isIn = x.typ==='prijem';
