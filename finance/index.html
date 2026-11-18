@@ -111,8 +111,17 @@ tfoot td{font-weight:700;border-top:2px solid var(--border);border-bottom:0;back
 .mlab .sel{color:var(--text)}
 .legend{display:flex;flex-wrap:wrap;gap:16px;color:var(--muted);font-size:13px;margin-bottom:10px}
 .legend b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
-.list{max-height:420px;overflow:auto}
+/* jedna velká tabulka s mřížkou: příjmy zeleně, výdaje červeně */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border-radius:999px;padding:5px 14px;font-size:14px;color:var(--muted)}
+.chip.on{color:var(--text);border-color:var(--muted);background:var(--secondary)}
+table.grid{font-size:15px}
+table.grid th,table.grid td{border:1px solid var(--border);padding:10px 12px}
+table.grid tbody tr.in td:first-child{box-shadow:inset 4px 0 0 var(--pos)}
+table.grid tbody tr.out td:first-child{box-shadow:inset 4px 0 0 var(--neg)}
+table.grid .amt{font:700 18px var(--display);letter-spacing:.02em}
+table.grid tfoot td{font-size:15px}
+#t-wrap{margin-bottom:28px}
 .note{color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis}
 .cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 24px;margin-bottom:28px}
 .cat .row{display:flex;justify-content:space-between;gap:8px}
@@ -202,12 +211,15 @@ details.rec summary{cursor:pointer;color:var(--muted);font-size:14px;margin-bott
   </form>
   <datalist id="cat-list"></datalist>
 
-  <div class="two">
-    <div><div class="sec" style="color:var(--pos)">Příjmy</div><div class="table-wrap list"><table>
-      <thead><tr><th>Den</th><th>Kategorie</th><th>Poznámka</th><th class="num">Kč</th><th></th></tr></thead><tbody id="t-in"></tbody></table></div></div>
-    <div><div class="sec">Výdaje</div><div class="table-wrap list"><table>
-      <thead><tr><th>Den</th><th>Kategorie</th><th>Poznámka</th><th class="num">Kč</th><th></th></tr></thead><tbody id="t-out"></tbody></table></div></div>
+  <div class="sec">Příjmy a výdaje</div>
+  <div class="chips" id="t-filter" role="group" aria-label="Zobrazit">
+    <button type="button" class="chip on" data-f="all">Vše</button>
+    <button type="button" class="chip" data-f="prijem">Jen příjmy</button>
+    <button type="button" class="chip" data-f="vydaj">Jen výdaje</button>
   </div>
+  <div class="table-wrap" id="t-wrap"><table class="grid">
+    <thead><tr><th>Den</th><th>Kategorie</th><th>Poznámka</th><th class="num">Příjem</th><th class="num">Výdaj</th><th></th></tr></thead>
+    <tbody id="t-rows"></tbody><tfoot id="t-foot"></tfoot></table></div>
 
   <div class="sec" style="margin-top:28px">Výdaje podle kategorií</div>
   <div class="cats" id="cats-out"></div>
@@ -244,6 +256,7 @@ const DEFAULT_CATS = {prijem:['Zakázky','Zakázky Poulík','Balance'],
   vydaj:['IAG','Intercars','Rall','LKQ','ostatní díly','Jarek','Tom','Brigádníci','Nájem+Energie','kapital pujcka','STK','vybavení','ostatní výlohy']};
 const show = v => { ['v-config','v-login','v-app'].forEach(id=>$(id).hidden = id!==v); $('user-box').hidden = $('top').hidden = v!=='v-app'; };
 
+let tFilter='all';
 let db=null, rows=[], recur=[], year=new Date().getFullYear(), month=new Date().getMonth(), typ='prijem', editId=null, entered=false, channel=null;
 
 function fail(msg, err){ console.error(err); alert(msg + (err?.message ? '\n\n'+err.message : '')); }
@@ -320,12 +333,19 @@ function render(){
   setStat('m-in',m.in); setStat('m-out',m.out); setStat('m-diff',m.in-m.out, m.in-m.out<0?'neg':'pos');
   setShare('m-poulik',m.poulik,m.poulik+m.ostatni); setShare('m-ostatni',m.ostatni,m.poulik+m.ostatni);
 
-  const row = x => `<tr><td>${+x.datum.slice(8)}.</td><td>${esc(x.kategorie)}</td><td class="note" title="${esc(x.poznamka)}">${esc(x.poznamka)}</td>
-    <td class="num">${money(x.castka)}</td><td><div class="actions"><button class="small" data-edit="${x.id}">Upravit</button><button class="small" data-del="${x.id}">Smazat</button></div></td></tr>`;
-  const byDay = (a,b)=>a.datum.localeCompare(b.datum);
-  const inc = list.filter(x=>x.typ==='prijem').sort(byDay), out = list.filter(x=>x.typ==='vydaj').sort(byDay);
-  $('t-in').innerHTML = inc.length ? inc.map(row).join('') : '<tr><td colspan="5" class="empty">Žádné příjmy</td></tr>';
-  $('t-out').innerHTML = out.length ? out.map(row).join('') : '<tr><td colspan="5" class="empty">Žádné výdaje</td></tr>';
+  const byDay = (a,b)=>a.datum.localeCompare(b.datum) || (a.typ===b.typ ? 0 : a.typ==='prijem' ? -1 : 1);
+  const inc = list.filter(x=>x.typ==='prijem'), out = list.filter(x=>x.typ==='vydaj');
+  const shown = list.filter(x=>tFilter==='all' || x.typ===tFilter).sort(byDay);
+  const row = x => { const isIn = x.typ==='prijem';
+    return `<tr class="${isIn?'in':'out'}"><td>${+x.datum.slice(8)}. ${+x.datum.slice(5,7)}.</td><td>${esc(x.kategorie)}</td>
+    <td class="note" title="${esc(x.poznamka)}">${esc(x.poznamka)}</td>
+    <td class="num amt pos">${isIn?'+'+money(x.castka):''}</td><td class="num amt neg">${isIn?'':'−'+money(x.castka)}</td>
+    <td><div class="actions"><button class="small" data-edit="${x.id}">Upravit</button><button class="small" data-del="${x.id}">Smazat</button></div></td></tr>`; };
+  $('t-rows').innerHTML = shown.length ? shown.map(row).join('') : '<tr><td colspan="6" class="empty">Žádné záznamy</td></tr>';
+  const sIn = sum(shown.filter(x=>x.typ==='prijem')), sOut = sum(shown.filter(x=>x.typ==='vydaj'));
+  $('t-foot').innerHTML = shown.length ? `<tr><td colspan="3">Celkem (${shown.length}) · rozdíl <span class="${sIn-sOut<0?'neg':'pos'}">${money(sIn-sOut)}</span></td>
+    <td class="num amt pos">+${money(sIn)}</td><td class="num amt neg">−${money(sOut)}</td><td></td></tr>` : '';
+  document.querySelectorAll('#t-filter .chip').forEach(c=>c.classList.toggle('on', c.dataset.f===tFilter));
   $('cats-out').innerHTML = catBars(out,'var(--primary)');
   $('cats-in').innerHTML = catBars(inc,'var(--pos)');
 
@@ -382,7 +402,8 @@ $('form').addEventListener('submit', async e=>{
   const d=rec.datum; if(+d.slice(0,4)===year) month=+d.slice(5,7)-1;
   resetForm(); await refresh(); $('f-cat').focus();
 });
-document.querySelector('.two').addEventListener('click', async e=>{
+$('t-filter').addEventListener('click', e=>{ const b=e.target.closest('[data-f]'); if(b){ tFilter=b.dataset.f; render(); } });
+$('t-wrap').addEventListener('click', async e=>{
   const b=e.target.closest('button'); if(!b) return;
   const x = rows.find(r=>r.id===(b.dataset.edit||b.dataset.del)); if(!x) return;
   if(b.dataset.edit){
